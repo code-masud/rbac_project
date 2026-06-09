@@ -19,10 +19,18 @@ class CanModifyComment(permissions.BasePermission):
     - Super Admins can delete any comment
     """
     
+    def has_permission(self, request, view):
+        # For DELETE requests, we need to check object permissions
+        return True
+    
     def has_object_permission(self, request, view, obj):
         # Safe methods are always allowed
         if request.method in permissions.SAFE_METHODS:
             return True
+        
+        # Only DELETE operation is allowed for modifications
+        if request.method != 'DELETE':
+            return False
         
         # Super admin can delete any comment
         if request.user.is_super_admin:
