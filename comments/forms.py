@@ -1,5 +1,6 @@
 from django import forms
 from .models import Comment
+from posts.models import Post
 
 
 class CommentForm(forms.ModelForm):
@@ -11,7 +12,10 @@ class CommentForm(forms.ModelForm):
             'placeholder': 'Write your comment here...'
         })
     )
-    post = forms.IntegerField(widget=forms.HiddenInput())
+    post = forms.ModelChoiceField(  # Changed from IntegerField to ModelChoiceField
+        queryset=Post.objects.filter(is_active=True),
+        widget=forms.HiddenInput()
+    )
     
     class Meta:
         model = Comment

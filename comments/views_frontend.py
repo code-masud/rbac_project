@@ -19,37 +19,54 @@ class CommentCreateView(LoginRequiredMixin, View):
             messages.error(request, 'Guests cannot post comments.')
             return redirect('post-list')
         
-        form = CommentForm(request.POST)
+        # Get the post ID from the form
+        post_id = request.POST.get('post')
         
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.author = request.user
-            comment.save()
-            
-            messages.success(request, 'Comment posted successfully!')
-            
-            # Also create via API
-            try:
-                access_token = request.session.get('access_token')
-                if access_token:
-                    headers = {'Authorization': f'Bearer {access_token}'}
-                    requests.post(
-                        'http://localhost:8000/api/comments/',
-                        json={
-                            'content': form.cleaned_data['content'],
-                            'post': form.cleaned_data['post'].id
-                        },
-                        headers=headers
-                    )
-            except:
-                pass
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, error)
+        # Validate post exists and is active
+        try:
+            post = Post.objects.get(id=post_id, is_active=True)
+        except Post.DoesNotExist:
+            messages.error(request, 'The post you are trying to comment on does not exist.')
+            return redirect('post-list')
         
-        return redirect('post-detail', pk=request.POST.get('post'))
-
+        # Create comment manually without form
+        content = request.POST.get('content', '').strip()
+        
+        if not content:
+            messages.error(request, 'Comment cannot be empty.')
+            return redirect('post-detail', pk=post_id)
+        
+        if len(content) > 1000:
+            messages.error(request, 'Comment must be less than 1000 characters.')
+            return redirect('post-detail', pk=post_id)
+        
+        # Create the comment
+        comment = Comment.objects.create(
+            content=content,
+            post=post,
+            author=request.user
+        )
+        
+        messages.success(request, 'Comment posted successfully!')
+        
+        # Also create via API
+        try:
+            access_token = request.session.get('access_token')
+            if access_token:
+                headers = {'Authorization': f'Bearer {access_token}'}
+                requests.post(
+                    'http://localhost:8000/api/comments/',
+                    json={
+                        'content': content,
+                        'post': post_id
+                    },
+                    headers=headers
+                )
+        except Exception as e:
+            # Log error but don't stop the process
+            print(f"API error: {e}")
+        
+        return redirect('post-detail', pk=post_id)
 
 class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """Delete Comment View (Comment owner, post owner, moderator, or super admin)"""
