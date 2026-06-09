@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}My Profile - RBAC Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Profile Info</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="avatar-circle bg-secondary text-white mx-auto mb-3">
+                        <span class="avatar-text">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+                    </div>
+                    <h5>{{ user.first_name }} {{ user.last_name }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    
+                    {% if user.is_super_admin %}
+                        <span class="badge bg-danger">Super Admin</span>
+                    {% elif user.is_moderator %}
+                        <span class="badge bg-warning">Moderator</span>
+                    {% elif user.is_regular_user %}
+                        <span class="badge bg-info">Regular User</span>
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <div class="text-start">
+                    <p><strong><i class="bi bi-calendar"></i> Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
+                    <p><strong><i class="bi bi-pencil-square"></i> Posts:</strong> {{ user.posts.count }}</p>
+                    <p><strong><i class="bi bi-chat"></i> Comments:</strong> {{ user.comments.count }}</p>
+                </div>
+                
+                <a href="{% url 'profile-edit' %}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-pencil"></i> Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-journal"></i> My Recent Posts</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for post in user.posts.all|slice:":5" %}
+                    <a href="{% url 'post-detail' post.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ post.title }}</h6>
+                                <small class="text-muted">{{ post.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">{{ post.comment_count }} comments</span>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">
+                        <i class="bi bi-journal-x"></i> No posts yet.
+                        <a href="{% url 'post-create' %}">Create your first post</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> My Recent Comments</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for comment in user.comments.all|slice:":5" %}
+                    <div class="list-group-item">
+                        <p class="mb-1">{{ comment.content|truncatewords:20 }}</p>
+                        <small class="text-muted">
+                            On <a href="{% url 'post-detail' comment.post.id %}">{{ comment.post.title }}</a>
+                            - {{ comment.created_at|timesince }} ago
+                        </small>
+                    </div>
+                {% empty %}
+                    <div class="list-group-item text-center text-muted">
+                        <i class="bi bi-chat-x"></i> No comments yet.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.avatar-text {
+    font-size: 32px;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

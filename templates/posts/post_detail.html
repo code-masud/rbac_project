@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }} - RBAC Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Post Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="h2 mb-2">{{ post.title }}</h1>
+                        <div class="text-muted">
+                            <i class="bi bi-person-circle"></i> 
+                            <strong>{{ post.author_name }}</strong>
+                            <span class="mx-1">•</span>
+                            <i class="bi bi-calendar"></i> {{ post.created_at|date:"F d, Y" }}
+                            {% if post.updated_at != post.created_at %}
+                                <span class="mx-1">•</span>
+                                <i class="bi bi-pencil"></i> Updated {{ post.updated_at|date:"M d, Y" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Post Action Buttons -->
+                    <div class="btn-group">
+                        <!-- Show Edit button only for post owner or super admin -->
+                        {% if user.is_authenticated and not user.is_guest %}
+                            {% if user == post.author or user.is_super_admin %}
+                                <a href="{% url 'post-edit' post.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <!-- Show Delete button for:
+                             - Post owner
+                             - Moderator
+                             - Super Admin -->
+                        {% if user.is_authenticated and not user.is_guest %}
+                            {% if user == post.author or user.is_moderator or user.is_super_admin %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="post-content">
+                    {{ post.content|linebreaks }}
+                </div>
+            </div>
+            
+            <div class="card-footer bg-white">
+                <div class="d-flex gap-3">
+                    <span class="text-muted">
+                        <i class="bi bi-chat"></i> {{ comments.count }} Comments
+                    </span>
+                    <span class="text-muted">
+                        <i class="bi bi-eye"></i> {{ post.view_count|default:"0" }} Views
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Comments ({{ comments.count }})</h5>
+            </div>
+            
+            <div class="card-body">
+                <!-- Comment Form - Only for authenticated users (not guests) -->
+                {% if user.is_authenticated and not user.is_guest %}
+                    <div class="mb-4 p-3 bg-light rounded">
+                        <h6>Leave a Comment</h6>
+                        <form method="POST" action="{% url 'comment-create' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="post" value="{{ post.id }}">
+                            <div class="mb-2">
+                                <textarea name="content" class="form-control" rows="3" 
+                                          placeholder="Write your comment here..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Post Comment
+                            </button>
+                        </form>
+                    </div>
+                {% elif not user.is_authenticated %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <a href="{% url 'login' %}">Login</a> or 
+                        <a href="{% url 'register' %}">Register</a> to leave a comment.
+                    </div>
+                {% endif %}
+                
+                <!-- Comments List -->
+                <div class="comments-list">
+                    {% for comment in comments %}
+                        <div class="comment-item {% if not forloop.last %}border-bottom{% endif %} pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="mb-2">
+                                        <strong>
+                                            <i class="bi bi-person-circle"></i> 
+                                            {{ comment.author_name }}
+                                        </strong>
+                                        <span class="text-muted small ms-2">
+                                            {{ comment.created_at|date:"F d, Y g:i A" }}
+                                        </span>
+                                        
+                                        {% if comment.author.is_super_admin %}
+                                            <span class="badge bg-danger ms-2">Super Admin</span>
+                                        {% elif comment.author.is_moderator %}
+                                            <span class="badge bg-warning ms-2">Moderator</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mb-1">{{ comment.content|linebreaks }}</p>
+                                </div>
+                                
+                                <!-- Delete Comment Button - Shows for:
+                                     - Comment owner
+                                     - Post owner
+                                     - Moderator
+                                     - Super Admin -->
+                                {% if user.is_authenticated and not user.is_guest %}
+                                    {% if user == comment.author or user == post.author or user.is_moderator or user.is_super_admin %}
+                                        <form method="POST" action="{% url 'comment-delete' comment.id %}" 
+                                              class="d-inline" 
+                                              onsubmit="return confirm('Delete this comment?')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-2" 
+                                                    title="Delete comment">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-chat display-4"></i>
+                            <p class="mt-2">No comments yet. Be the first to comment!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Post Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Delete Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<strong>{{ post.title }}</strong>"?</p>
+                <p class="text-danger">This action cannot be undone. All comments will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'post-delete' post.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Yes, Delete Post</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.post-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+.comment-item {
+    transition: background-color 0.2s;
+}
+.comment-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}  

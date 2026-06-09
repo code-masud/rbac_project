@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users - RBAC Blog{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-people"></i> User Management</h1>
+        <p class="text-muted">Manage system users and their roles</p>
+    </div>
+</div>
+
+<!-- Role Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Users</h5>
+                <h2 class="mb-0">{{ users.paginator.count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Super Admins</h5>
+                <h2 class="mb-0">{{ role_counts.super_admin }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Moderators</h5>
+                <h2 class="mb-0">{{ role_counts.moderator }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Regular Users</h5>
+                <h2 class="mb-0">{{ role_counts.regular_user }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Table -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-0">All Users</h5>
+            </div>
+            <div class="col-md-6">
+                <form method="GET" class="d-flex">
+                    <select name="role" class="form-select me-2">
+                        <option value="">All Roles</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="moderator">Moderator</option>
+                        <option value="regular_user">Regular User</option>
+                        <option value="guest">Guest</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.is_super_admin %}
+                            <span class="badge bg-danger">Super Admin</span>
+                        {% elif user.is_moderator %}
+                            <span class="badge bg-warning">Moderator</span>
+                        {% else %}
+                            <span class="badge bg-info">Regular User</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editRole({{ user.id }}, '{{ user.role }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteUser({{ user.id }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% include 'includes/pagination.html' with page_obj=users %}
+
+<script>
+function editRole(userId, currentRole) {
+    const newRole = prompt('Enter new role (super_admin/moderator/regular_user):', currentRole);
+    if (newRole && newRole !== currentRole) {
+        fetch(`/api/auth/users/${userId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ role: newRole })
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to update role');
+            }
+        });
+    }
+}
+
+function deleteUser(userId) {
+    if (confirm('Are you sure you want to delete this user?')) {
+        fetch(`/api/auth/users/${userId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to delete user');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}  

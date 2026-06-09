@@ -1,0 +1,93 @@
+    {% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}Edit Post{% else %}Create Post{% endif %} - RBAC Blog{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}plus-circle{% endif %}"></i>
+                    {% if form.instance.pk %}Edit Post{% else %}Create New Post{% endif %}
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title *</label>
+                        <input type="text" class="form-control form-control-lg" 
+                               id="title" name="title" 
+                               value="{{ form.title.value|default:'' }}"
+                               required autofocus>
+                        {% if form.title.errors %}
+                            <div class="text-danger small">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Content *</label>
+                        <textarea class="form-control" id="content" name="content" 
+                                  rows="12" required>{{ form.content.value|default:'' }}</textarea>
+                        {% if form.content.errors %}
+                            <div class="text-danger small">{{ form.content.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Minimum 10 characters. Markdown supported.</small>
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% if form.instance.pk %}{% url 'post-detail' form.instance.pk %}{% else %}{% url 'post-list' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 
+                            {% if form.instance.pk %}Update Post{% else %}Publish Post{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips -->
+        <div class="card mt-3 bg-light">
+            <div class="card-body">
+                <h6><i class="bi bi-lightbulb"></i> Writing Tips:</h6>
+                <ul class="small mb-0">
+                    <li>Use clear and concise titles</li>
+                    <li>Break content into paragraphs for better readability</li>
+                    <li>You can edit or delete your post anytime</li>
+                    <li>Moderators and admins can delete inappropriate content</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Character counter for content
+const contentTextarea = document.getElementById('content');
+if (contentTextarea) {
+    const counter = document.createElement('div');
+    counter.className = 'text-muted small mt-1';
+    counter.id = 'charCounter';
+    contentTextarea.parentNode.appendChild(counter);
+    
+    function updateCounter() {
+        const length = contentTextarea.value.length;
+        counter.textContent = `${length} characters (minimum 10)`;
+        if (length < 10) {
+            counter.style.color = 'red';
+        } else {
+            counter.style.color = '#6c757d';
+        }
+    }
+    
+    contentTextarea.addEventListener('input', updateCounter);
+    updateCounter();
+}
+</script>
+{% endblock %}
+{% endblock %}
