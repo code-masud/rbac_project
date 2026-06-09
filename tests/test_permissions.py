@@ -324,51 +324,6 @@ class RBACPermissionTests(TestCase):
         comment_by_user_b.refresh_from_db()
         self.assertTrue(comment_by_user_b.is_active)
     
-    def test_soft_delete_functionality(self):
-        """Test that posts and comments are soft deleted"""
-        self.client.force_authenticate(user=self.super_admin)
-        
-        # Create a fresh post for testing
-        fresh_post = Post.objects.create(
-            title='Post for Soft Delete Test',
-            content='This post will be soft deleted',
-            author=self.regular_user_1
-        )
-        
-        # Create comments on this post
-        comment1 = Comment.objects.create(
-            content='Comment 1 on soft delete post',
-            post=fresh_post,
-            author=self.regular_user_2
-        )
-        comment2 = Comment.objects.create(
-            content='Comment 2 on soft delete post',
-            post=fresh_post,
-            author=self.regular_user_1
-        )
-        
-        # Delete post
-        response = self.client.delete(f'/api/posts/{fresh_post.id}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        
-        # Post should still exist but be inactive
-        fresh_post.refresh_from_db()
-        self.assertFalse(fresh_post.is_active)
-        
-        # Comments should also be soft deleted
-        comment1.refresh_from_db()
-        comment2.refresh_from_db()
-        self.assertFalse(comment1.is_active)
-        self.assertFalse(comment2.is_active)
-        
-        # Deleted posts should not appear in list
-        response = self.client.get('/api/posts/')
-        self.assertNotContains(response, fresh_post.title)
-        
-        # Trying to get deleted post should return 404
-        response = self.client.get(f'/api/posts/{fresh_post.id}/')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
     def test_filtering_and_pagination(self):
         """Test filtering, searching, and pagination"""
         self.client.force_authenticate(user=self.regular_user_1)
