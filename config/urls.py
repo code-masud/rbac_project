@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from accounts.views_frontend import (
-    LoginView, RegisterView, ProfileView, ProfileEditView, 
+    LoginView, LogoutView, RegisterView, ProfileView, ProfileEditView, 
     ChangePasswordView, UserListView
 )
 from posts.views_frontend import (
@@ -27,6 +27,7 @@ urlpatterns = [
     # Frontend URLs 
     path('', PostListView.as_view(), name='post-list'),
     path('login/', LoginView.as_view(), name='login'),
+    path('signout/', LogoutView.as_view(), name='signout'),
     path('register/', RegisterView.as_view(), name='register'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('profile/edit/', ProfileEditView.as_view(), name='profile-edit'),

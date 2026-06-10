@@ -7,6 +7,7 @@ from django.urls import reverse, reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
 from .models import User
 from .forms import UserRegistrationForm, UserUpdateForm, ChangePasswordForm
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -65,6 +66,32 @@ class LoginView(View):
         return render(request, self.template_name)
 
 
+class LogoutView(LoginRequiredMixin, View):
+    """Custom Logout View for Frontend"""
+    login_url = 'login'
+    
+    @method_decorator(csrf_protect)
+    @method_decorator(never_cache)
+    def post(self, request):
+        # Clear JWT tokens from session
+        if 'access_token' in request.session:
+            del request.session['access_token']
+        if 'refresh_token' in request.session:
+            del request.session['refresh_token']
+        
+        # Logout the user
+        logout(request)
+        
+        # Add success message
+        messages.success(request, 'You have been successfully logged out.')
+        
+        # Redirect to login page
+        return redirect('login')
+    
+    def get(self, request):
+        """Handle GET requests by showing confirmation page or redirecting"""
+        return render(request, 'accounts/logout_confirm.html')
+    
 class RegisterView(CreateView):
     """Frontend Registration View"""
     model = User

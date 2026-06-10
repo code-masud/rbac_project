@@ -1,4 +1,4 @@
-    {% load static %}
+{% load static %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
     <div class="container">
         <a class="navbar-brand" href="{% url 'post-list' %}">
@@ -70,7 +70,8 @@
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form method="POST" action="{% url 'logout' %}" class="d-inline">
+                                <!-- Updated logout form with POST method -->
+                                <form method="POST" action="{% url 'signout' %}" class="d-inline" id="logoutForm">
                                     {% csrf_token %}
                                     <button type="submit" class="dropdown-item text-danger">
                                         <i class="bi bi-box-arrow-right"></i> Logout
@@ -95,3 +96,17 @@
         </div>
     </div>
 </nav>
+
+<!-- Add this script for logout confirmation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutForm = document.getElementById('logoutForm');
+    if (logoutForm) {
+        logoutForm.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to logout?')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
